@@ -30,7 +30,7 @@ function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
-              <h1 className="text-xs font-extrabold text-gray-900 leading-tight">
+              <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">
                 Healing Journeys Across India
               </h1>
               <p className="mt-4 text-lg text-gray-600">
