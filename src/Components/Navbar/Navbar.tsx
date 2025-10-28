@@ -33,13 +33,15 @@ export default function Navbar() {
     }
   }, [isSignedIn, user])
 
-  const linkClass = (path: string) =>
-    `transition-colors ${activePath === path
-      ? 'text-vibrant-blue'
-      : 'text-gray-700 hover:text-vibrant-orange'
-    }`
 
-    const myrole='user';
+  const linkClass = (path: string) =>
+        `transition-colors text-sm sm:text-base ${ // Adjusted text size
+          activePath === path
+            ? 'text-vibrant-blue font-semibold' // Make active link bold
+            : 'text-gray-700 hover:text-vibrant-orange'
+        }`
+
+  const myrole='user';
 
   const [synced, setSynced] = useState(false);
   useEffect(() => {
@@ -68,68 +70,77 @@ export default function Navbar() {
     createUser();
   }, [user, isSignedIn, synced]);
 
-  return (
+
+return (
     <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-gray-200/70">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-extrabold gradient-text">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between"> {/* Adjusted height */}
+        <Link href="/" className="text-xl sm:text-2xl font-extrabold gradient-text"> {/* Adjusted text size */}
           MedicoTourism
         </Link>
 
         {/* Navigation links */}
-        <nav className="flex items-center gap-6 text-l font-semibold">
+        <nav className="hidden sm:flex items-center gap-4 md:gap-6"> {/* Hide on small screens, adjust gap */}
+           {/* Add common links if any */}
+           {/* <Link href="/about" className={linkClass('/about')}>About</Link> */}
 
-          {/* Role-based routes */}
-          {role === 'patient' && (
-            <>
-              <Link href="/intake" className={linkClass('/intake')}>
-                Medical Form
-              </Link>
-              <Link href="/profile" className={linkClass('/profile')}>
-                Profile
-              </Link>
-            </>
-          )}
+          {/* Role-based AND SignedIn Check */}
+           <SignedIn>
+               {/* Link to Visits page for all signed-in users */}
+               <Link href="/visits" className={linkClass('/visits')}>
+                    My Visits
+               </Link>
 
-          {role === 'doctor' && (
-            <>
-              <Link href="/doctor" className={linkClass('/doctor')}>
-                Doctor Panel
-              </Link>
-              <Link href="/reports" className={linkClass('/reports')}>
-                Reports
-              </Link>
-            </>
-          )}
+                {/* Existing role-specific links */}
+                {/* Conditionally render links based on the 'role' state */}
+                {role === 'patient' && (
+                    <>
+                        {/* Example: Add patient-specific links if needed, maybe profile handled by UserButton */}
+                        {/* <Link href="/profile" className={linkClass('/profile')}>Profile</Link> */}
+                     </>
+                )}
+                {role === 'doctor' && (
+                    <>
+                      <Link href="/doctor" className={linkClass('/doctor')}>
+                        Doctor Panel
+                      </Link>
+                      <Link href="/reports" className={linkClass('/reports')}>
+                        Reports
+                      </Link>
+                    </>
+                )}
+                {role === 'admin' && (
+                    <Link href="/admin" className={linkClass('/admin')}>
+                      Admin Dashboard
+                    </Link>
+                )}
+           </SignedIn>
 
-          {role === 'admin' && (
-            <Link href="/admin" className={linkClass('/admin')}>
-              Admin Dashboard
-            </Link>
-          )}
         </nav>
 
         {/* Right side buttons */}
-        <div>
+        <div className="flex items-center">
           <SignedOut>
-            <div className="flex gap-3">
-              <SignInButton mode="redirect">
-                <button className="bg-[#6c47ff] cursor-pointer text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-11 px-4 sm:px-5 transition-transform hover:scale-105">
-                  Sign In
-                </button>
-              </SignInButton>
-
-              <SignUpButton mode="redirect">
-                <button className="bg-[#6c47ff] cursor-pointer text-white rounded-full font-medium text-sm sm:text-base h-10 sm:h-11 px-4 sm:px-5 transition-transform hover:scale-105">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </div>
+               {/* Using the Sign In/Up buttons provided by Clerk */}
+               <div className="flex gap-2 sm:gap-3">
+                 <SignInButton mode="redirect">
+                    <button className="bg-[#6c47ff] cursor-pointer text-white rounded-full font-medium text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4 transition-transform hover:scale-105">
+                      Sign In
+                    </button>
+                 </SignInButton>
+                 <SignUpButton mode="redirect">
+                     <button className="border border-[#6c47ff] cursor-pointer text-[#6c47ff] rounded-full font-medium text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4 transition-transform hover:scale-105 bg-white hover:bg-purple-50">
+                       Sign Up
+                     </button>
+                 </SignUpButton>
+                </div>
           </SignedOut>
 
           <SignedIn>
+             {/* UserButton handles profile, sign out etc. */}
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
-        </div>
+           {/* Optional: Add a mobile menu button here for smaller screens */}
+         </div>
       </div>
     </header>
   )
