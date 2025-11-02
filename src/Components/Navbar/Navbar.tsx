@@ -17,56 +17,72 @@ export default function Navbar() {
   const { user, isSignedIn } = useUser()
   const [role, setRole] = useState<string | null>(null)
   const [activePath, setActivePath] = useState('');
+  const [synced, setSynced] = useState(false);
 
   // Track current path
   useEffect(() => {
     setActivePath(window.location.pathname)
   }, [])
 
-  // Example: Fetch custom role from backend (if Clerk user is linked to your DB)
+  // Fetch role from localStorage
   useEffect(() => {
     if (isSignedIn && user) {
       const storedRole = localStorage.getItem('role')
-      setRole(storedRole || 'patient') // fallback
+      setRole(storedRole || 'patient')
     } else {
       setRole(null)
     }
   }, [isSignedIn, user])
 
-  const linkClass = (path: string) =>
-    `transition-colors ${activePath === path
-      ? 'text-vibrant-blue'
-      : 'text-gray-700 hover:text-vibrant-orange'
-    }`
-
-    const myrole='user';
-
-  const [synced, setSynced] = useState(false);
+  // Sync user with backend
   useEffect(() => {
     if (!isSignedIn || !user || synced) return;
 
     const createUser = async () => {
       try {
-        const res = await fetch('http://localhost:5001/api/addUser', {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+        
+        const res = await fetch(`${API_BASE_URL}/addUser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             clerkId: user.id,
             email: user.emailAddresses[0]?.emailAddress,
             name: user.fullName,
-            role: myrole
+            role: 'patient' // default role
           }),
         });
 
-        if (res.ok) console.log("User synced");
-        setSynced(true); // prevent multiple calls
+        if (res.ok) {
+          console.log("✅ User synced with backend");
+          const data = await res.json();
+          
+          // Store user data in localStorage
+          localStorage.setItem('user', JSON.stringify({
+            clerkId: user.id,
+            email: user.emailAddresses[0]?.emailAddress,
+            name: user.fullName,
+            role: 'patient',
+            pseudonym_id: data.pseudonym_id
+          }));
+          localStorage.setItem('role', 'patient');
+          
+          setRole('patient');
+        }
+        setSynced(true);
       } catch (err) {
-        console.error(err);
+        console.error('❌ Error syncing user:', err);
       }
     };
 
     createUser();
   }, [user, isSignedIn, synced]);
+
+  const linkClass = (path: string) =>
+    `transition-colors ${activePath === path
+      ? 'text-vibrant-blue'
+      : 'text-gray-700 hover:text-vibrant-orange'
+    }`
 
   return (
     <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-md border-b border-gray-200/70">
@@ -75,10 +91,7 @@ export default function Navbar() {
           MedicoTourism
         </Link>
 
-        {/* Navigation links */}
         <nav className="flex items-center gap-6 text-l font-semibold">
-
-          {/* Role-based routes */}
           {role === 'patient' && (
             <>
               <Link href="/intake" className={linkClass('/intake')}>
@@ -108,7 +121,6 @@ export default function Navbar() {
           )}
         </nav>
 
-        {/* Right side buttons */}
         <div>
           <SignedOut>
             <div className="flex gap-3">
