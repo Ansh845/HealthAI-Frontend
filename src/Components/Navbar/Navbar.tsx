@@ -14,74 +14,84 @@ import {
 
 export default function Navbar() {
   const router = useRouter()
-  const { user, isSignedIn } = useUser()
+  const { user, isSignedIn, isLoaded } = useUser() // Added isLoaded
   const [role, setRole] = useState<string | null>(null)
-  const [activePath, setActivePath] = useState('');
-  const [synced, setSynced] = useState(false);
+  const [activePath, setActivePath] = useState('')
+  const [synced, setSynced] = useState(false)
+  const [loading, setLoading] = useState(true) // Track loading state
 
   // Track current path
   useEffect(() => {
     setActivePath(window.location.pathname)
   }, [])
 
-  // Fetch role from localStorage
+  // Fetch role from localStorage and set default
   useEffect(() => {
-    if (isSignedIn && user) {
-      const storedRole = localStorage.getItem('role')
-      setRole(storedRole || 'patient')
-    } else {
-      setRole(null)
+    if (isLoaded) {
+      if (isSignedIn && user) {
+        const storedRole = localStorage.getItem('role')
+        setRole(storedRole || 'user') // Default to 'user' if no role
+      } else {
+        setRole(null)
+      }
+      setLoading(false)
     }
-  }, [isSignedIn, user])
+  }, [isSignedIn, user, isLoaded])
 
   // Sync user with backend
   useEffect(() => {
-    if (!isSignedIn || !user || synced) return;
+    if (!isSignedIn || !user || synced) return
 
     const createUser = async () => {
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'
         
-        const res = await fetch(`${API_BASE_URL}/addUser`, {
+        const res = await fetch(`${API_BASE_URL}/api/addUser`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             clerkId: user.id,
             email: user.emailAddresses[0]?.emailAddress,
             name: user.fullName,
-            role: 'patient' // default role
+            role: 'user', // default role
           }),
-        });
+        })
 
         if (res.ok) {
-          console.log("✅ User synced with backend");
-          const data = await res.json();
+          console.log('✅ User synced with backend')
+          const data = await res.json()
           
           // Store user data in localStorage
-          localStorage.setItem('user', JSON.stringify({
+          const userData = {
             clerkId: user.id,
             email: user.emailAddresses[0]?.emailAddress,
             name: user.fullName,
-            role: 'patient',
-            pseudonym_id: data.pseudonym_id
-          }));
-          localStorage.setItem('role', 'patient');
+            role: 'user',
+            pseudonym_id: data.user?._id || data.pseudonym_id,
+          }
           
-          setRole('patient');
+          localStorage.setItem('user', JSON.stringify(userData))
+          localStorage.setItem('role', 'user')
+          
+          setRole('user')
+        } else {
+          console.error('❌ Failed to sync user:', await res.text())
         }
-        setSynced(true);
+        setSynced(true)
       } catch (err) {
-        console.error('❌ Error syncing user:', err);
+        console.error('❌ Error syncing user:', err)
+        setSynced(true) // Mark as synced even on error to prevent infinite retry
       }
-    };
+    }
 
-    createUser();
-  }, [user, isSignedIn, synced]);
+    createUser()
+  }, [user, isSignedIn, synced])
 
   const linkClass = (path: string) =>
-    `transition-colors ${activePath === path
-      ? 'text-vibrant-blue'
-      : 'text-gray-700 hover:text-vibrant-orange'
+    `transition-colors ${
+      activePath === path
+        ? 'text-vibrant-blue'
+        : 'text-gray-700 hover:text-vibrant-orange'
     }`
 
   return (
@@ -92,8 +102,17 @@ export default function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-6 text-l font-semibold">
-          {role === 'patient' && (
+          {/* Show loading state */}
+          {loading && isSignedIn && (
+            <div className="text-gray-400">Loading...</div>
+          )}
+
+          {/* Always show basic navigation for signed-in users */}
+          {!loading && isSignedIn && (
             <>
+              <Link href="/" className={linkClass('/')}>
+                Home
+              </Link>
               <Link href="/intake" className={linkClass('/intake')}>
                 Medical Form
               </Link>
@@ -103,7 +122,8 @@ export default function Navbar() {
             </>
           )}
 
-          {role === 'doctor' && (
+          {/* Role-specific navigation */}
+          {!loading && role === 'doctor' && (
             <>
               <Link href="/doctor" className={linkClass('/doctor')}>
                 Doctor Panel
@@ -114,7 +134,7 @@ export default function Navbar() {
             </>
           )}
 
-          {role === 'admin' && (
+          {!loading && role === 'admin' && (
             <Link href="/admin" className={linkClass('/admin')}>
               Admin Dashboard
             </Link>
